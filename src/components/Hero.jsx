@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { MapPin, Calendar, Users, Search } from 'lucide-react';
 
-export default function Hero() {
+export default function Hero({ onSearch }) {
   const [destination, setDestination] = useState('');
-  const [dates, setDates] = useState('');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    const message = `Searching hotels in ${destination || 'anywhere'} for ${dates || 'flexible dates'} · ${guests} guest(s)`;
-    alert(message);
+    onSearch?.({ destination, checkIn, checkOut, guests });
   };
 
   return (
@@ -46,7 +46,7 @@ export default function Hero() {
         {/* Search bar */}
         <form
           onSubmit={onSubmit}
-          className="mt-10 grid grid-cols-1 gap-3 rounded-2xl bg-white/90 p-3 shadow-xl backdrop-blur sm:grid-cols-5"
+          className="mt-10 grid grid-cols-1 gap-3 rounded-2xl bg-white/90 p-3 shadow-xl backdrop-blur sm:grid-cols-6"
         >
           <div className="sm:col-span-2 flex items-center gap-2 rounded-xl border border-black/5 bg-white px-4 py-3">
             <MapPin className="h-5 w-5 text-emerald-600" />
@@ -59,15 +59,24 @@ export default function Hero() {
               aria-label="Destination"
             />
           </div>
-          <div className="sm:col-span-2 flex items-center gap-2 rounded-xl border border-black/5 bg-white px-4 py-3">
+          <div className="sm:col-span-1 flex items-center gap-2 rounded-xl border border-black/5 bg-white px-4 py-3">
             <Calendar className="h-5 w-5 text-emerald-600" />
             <input
-              type="text"
-              placeholder="Check‑in — Check‑out"
-              value={dates}
-              onChange={(e) => setDates(e.target.value)}
+              type="date"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
               className="w-full bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
-              aria-label="Dates"
+              aria-label="Check-in"
+            />
+          </div>
+          <div className="sm:col-span-1 flex items-center gap-2 rounded-xl border border-black/5 bg-white px-4 py-3">
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            <input
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+              className="w-full bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              aria-label="Check-out"
             />
           </div>
           <div className="sm:col-span-1 flex items-center gap-2 rounded-xl border border-black/5 bg-white px-4 py-3">
