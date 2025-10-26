@@ -3,7 +3,6 @@ import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import Filters from './components/Filters.jsx';
 import Results from './components/Results.jsx';
-import Footer from './components/Footer.jsx';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -132,7 +131,6 @@ export default function App() {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }
