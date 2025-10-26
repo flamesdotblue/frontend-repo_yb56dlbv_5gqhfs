@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
+import Filters from './components/Filters.jsx';
 import Results from './components/Results.jsx';
 import Footer from './components/Footer.jsx';
 
@@ -10,16 +11,19 @@ export default function App() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [params, setParams] = useState({ destination: '', min_rating: 0, max_price: undefined });
+
+  // Search + filter parameters
+  const [params, setParams] = useState({ destination: '' });
+  const [filters, setFilters] = useState({ maxPrice: 800, minRating: 0, sortBy: 'recommended' });
 
   const queryString = useMemo(() => {
     const q = new URLSearchParams();
     if (params.destination) q.set('destination', params.destination);
-    if (params.min_rating) q.set('min_rating', String(params.min_rating));
-    if (params.max_price) q.set('max_price', String(params.max_price));
+    if (filters.minRating) q.set('min_rating', String(filters.minRating));
+    if (filters.maxPrice) q.set('max_price', String(filters.maxPrice));
     q.set('limit', '12');
     return q.toString();
-  }, [params]);
+  }, [params, filters.minRating, filters.maxPrice]);
 
   const fetchHotels = async () => {
     try {
@@ -28,7 +32,8 @@ export default function App() {
       const res = await fetch(`${API_BASE}/hotels?${queryString}`);
       if (!res.ok) throw new Error('Failed to load hotels');
       const data = await res.json();
-      setHotels(Array.isArray(data) ? data : []);
+      const safe = Array.isArray(data) ? data : [];
+      setHotels(applySorting(safe, filters.sortBy));
     } catch (e) {
       setError(e.message || 'Something went wrong');
       setHotels([]);
@@ -42,12 +47,18 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryString]);
 
+  // Re-apply sorting client-side when sort option changes
+  useEffect(() => {
+    setHotels((prev) => applySorting(prev, filters.sortBy));
+  }, [filters.sortBy]);
+
   const handleSearch = ({ destination }) => {
     setParams((p) => ({ ...p, destination: destination || '' }));
   };
 
   const resetSearch = () => {
-    setParams({ destination: '', min_rating: 0, max_price: undefined });
+    setParams({ destination: '' });
+    setFilters({ maxPrice: 800, minRating: 0, sortBy: 'recommended' });
   };
 
   return (
@@ -56,15 +67,18 @@ export default function App() {
       <main>
         <Hero onSearch={handleSearch} />
 
+        {/* Filter controls bar */}
+        <Filters filters={filters} setFilters={setFilters} />
+
         {/* Results Section */}
         <section className="mx-auto max-w-7xl px-4 py-16">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Top deals</h2>
-              <p className="text-gray-600">Pulled live from the database and filtered by your destination.</p>
+              <p className="text-gray-600">Live results from the API, filtered by your destination and preferences.</p>
             </div>
             <div className="flex items-center gap-3">
-              {(params.destination || params.min_rating || params.max_price) && (
+              {(params.destination || filters.minRating || (filters.maxPrice && filters.maxPrice !== 800) || filters.sortBy !== 'recommended') && (
                 <button onClick={resetSearch} className="text-sm text-slate-600 hover:text-slate-900 underline">
                   Reset search
                 </button>
@@ -121,4 +135,20 @@ export default function App() {
       <Footer />
     </div>
   );
+}
+
+function applySorting(list, sortBy) {
+  const arr = [...list];
+  if (sortBy === 'price') {
+    return arr.sort((a, b) => getBestPrice(a) - getBestPrice(b));
+  }
+  if (sortBy === 'rating') {
+    return arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+  return arr; // recommended: keep original order
+}
+
+function getBestPrice(hotel) {
+  if (!hotel?.offers?.length) return Number.MAX_SAFE_INTEGER;
+  return hotel.offers.reduce((min, o) => (o.price < min ? o.price : min), hotel.offers[0].price);
 }
